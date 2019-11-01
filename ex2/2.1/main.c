@@ -15,7 +15,6 @@ _/    _/  _/_/_/  _/_/_/_/ email: Davide.Galli@unimi.it
 #include <tuple>
 #include <cmath>
 #include "rng/random.h"
-#include "function.h"
 
 using namespace std;
 
@@ -23,49 +22,64 @@ tuple<vector<double>,vector<double>> blocking_method(vector<double> v, int n_ste
 double function(double x);
 Random rng_load();
 
-Function f();
-vector <double> r;
-vector <double> m_i, err_i;
+vector <double> r_uni, m_u, err_u;
+vector <double> r_imp, m_i, err_i;
 
-int n_throw = 100000;
+int n_point = 1000;
 int n_block = 100;
-double l_block = n_throw*1./n_block;
+int n_rep = 100000;
+double l_block = n_rep/n_block;
 int x_min=0, x_max=1;
 
 int main (int argc, char *argv[])
 {
   Random rnd = rng_load();
 
-//  Montecarlo using accept-reject
-//  fill r with 1 if random accepted, 0 if rejected
-
-  double x,y; 
-
-  for(int i = 0; i < n_throw; i++) 
+  double sample;
+  double uniform, importance;
+  
+  for( int i=0; i<n_rep; i++)
   {
-    x=rnd.Rannyu(x_min,x_max);
-    y=rnd.Rannyu();
-    if(y > f->Eval(x)*1./f->Max())
-      y=0;
-    r.push_back(y*f->Max());
+    uniform=0, importance=0;
+    for( int j=0; j< n_point;j++)
+    {
+      sample=rnd.Importance();
+      uniform += M_PI_2 * cos(M_PI_2*rnd.Rannyu());
+      //importance += M_PI_2 * cos(M_PI_2*sample)*5./(6*(1.-0.5*pow(sample,2)));
+      importance += M_PI_2 * cos(M_PI_2*sample) * 0.5/(1-sample);
+    }
+    r_uni.push_back(uniform*1./n_point);
+    r_imp.push_back(importance*1./n_point);
   }
   
   // use blocking method to evaluate average and error
-  m_i = get<0>(blocking_method(r, n_throw, n_block));
-  err_i = get<1>(blocking_method(r, n_throw, n_block));
+  m_u = get<0>(blocking_method(r_uni, n_rep, n_block));
+  m_i = get<0>(blocking_method(r_imp, n_rep, n_block));
+  err_u = get<1>(blocking_method(r_uni, n_rep, n_block));
+  err_i = get<1>(blocking_method(r_imp, n_rep, n_block));
 
 /********************************
 * Saving to file
 ********************************/
 
-  ofstream i_out("integral.dat");
-  if (i_out.is_open()) 
+  ofstream u_out("uniform.dat");
+  if (u_out.is_open()) 
   {
     for (int i = 0; i < n_block; i++)
-      i_out << i * l_block << " " << m_i[i] - 1./12 << " " << err_i[i] << endl;
+      u_out << i * l_block << " " << m_u[i] << " " << err_u[i] << endl;
   } 
   else
     cerr <<"Unable to open integral output file: data saving failed" <<endl;
+  u_out.close();
+  
+  ofstream i_out("importance.dat");
+  if (i_out.is_open()) 
+  {
+    for (int i = 0; i < n_block; i++)
+      i_out << i * l_block << " " << m_i[i] << " " << err_i[i] << endl;
+  } 
+  else
+    cerr <<"Unable to open importance sampling output file: data saving failed" <<endl;
   i_out.close();
   return 0; 
 }
@@ -84,9 +98,8 @@ double error(double sum, double sum2, int n){
 }
 
 
-class Integral(){
-  
-
+class Integral
+{
   double evaluate(double x)
   {
     return M_PI_2*cos(M_PI_2*x);
@@ -103,8 +116,8 @@ double function(double x)
 }
 
 /**********************************************/
-/* tuple are the common way to return multiple values, of different types
-*/
+/* use tuple to return multiple values
+***********************************************/
 
 tuple<vector<double>,vector<double>> blocking_method(vector<double> v, int n_step, int n_blocks) {
   vector<double> av, av2, err;

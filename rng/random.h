@@ -31,6 +31,7 @@ public:
   double Gauss(double mean, double sigma);
   double Exp(double mean);
   double Lorentz(double mean, double gamma);
+  double Importance(void);
 };
 
 #endif // __Random__

@@ -47,6 +47,11 @@ double Random :: Lorentz(double mean, double gamma) {
   return mean + gamma * tan(M_PI*(n-0.5));
 }
 
+double Random :: Importance()
+{ 
+  return 2.*(1. - Rannyu());
+}
+
 double Random :: Rannyu(double min, double max){
    return min+(max-min)*Rannyu();
 }

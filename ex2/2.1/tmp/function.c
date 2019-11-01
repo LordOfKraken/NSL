@@ -1,7 +1,7 @@
 #include "function.h"
 #include <cmath>
 
-using samespace std;
+using namespace std;
 
 Function::Function()
 {
