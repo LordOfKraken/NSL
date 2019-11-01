@@ -15,70 +15,67 @@ _/    _/  _/_/_/  _/_/_/_/ email: Davide.Galli@unimi.it
 #include <tuple>
 #include <cmath>
 #include "rng/random.h"
+#include "function.h"
 
 using namespace std;
 
-int drop(double L, double d, Random *r);
-double error(double sum, double sum2, int n);
-tuple<vector<double>,vector<double>> blocking_method(vector<double> v, int n_step, int n_block);
+tuple<vector<double>,vector<double>> blocking_method(vector<double> v, int n_step, int n_blocks);
+double function(double x);
 Random rng_load();
 
-int main(int argc, char *argv[]) 
-{ 
-  Random rnd=rng_load();
-  double L=0.7;
-  double d=1;
-  int n_hit=0;
-  int n_throw = 10000;
-  int n_block = 100;
-  int n_rep = 1000;
-  double l_block = n_throw*1./n_block;
-  vector <double> pi, ave, err;
-  
-  for( int j=0; j< n_rep; j++)
+Function f();
+vector <double> r;
+vector <double> m_i, err_i;
+
+int n_throw = 100000;
+int n_block = 100;
+double l_block = n_throw*1./n_block;
+int x_min=0, x_max=1;
+
+int main (int argc, char *argv[])
+{
+  Random rnd = rng_load();
+
+//  Montecarlo using accept-reject
+//  fill r with 1 if random accepted, 0 if rejected
+
+  double x,y; 
+
+  for(int i = 0; i < n_throw; i++) 
   {
-    n_hit=0;
-    for( int i=0; i< n_throw; i++)
-    {
-      n_hit+=drop(L,d,&rnd);
-    }
-    pi.push_back(2*L*n_throw/(d*n_hit));
+    x=rnd.Rannyu(x_min,x_max);
+    y=rnd.Rannyu();
+    if(y > f->Eval(x)*1./f->Max())
+      y=0;
+    r.push_back(y*f->Max());
   }
   
-  ave=get<0>(blocking_method(pi,n_rep,n_block));
-  err=get<1>(blocking_method(pi,n_rep,n_block));
+  // use blocking method to evaluate average and error
+  m_i = get<0>(blocking_method(r, n_throw, n_block));
+  err_i = get<1>(blocking_method(r, n_throw, n_block));
 
-  ofstream out("pi.dat");
-  if (out.is_open())
-    for (int i = 0; i < n_block; ++i)
-      out << i*l_block << " " << pi[i] << " " << err[i] << endl;
+/********************************
+* Saving to file
+********************************/
+
+  ofstream i_out("integral.dat");
+  if (i_out.is_open()) 
+  {
+    for (int i = 0; i < n_block; i++)
+      i_out << i * l_block << " " << m_i[i] - 1./12 << " " << err_i[i] << endl;
+  } 
   else
-    cerr << "PROBLEM: Unable to open output file" << endl;
-  
-  out.close();
-  return 0;
+    cerr <<"Unable to open integral output file: data saving failed" <<endl;
+  i_out.close();
+  return 0; 
 }
 
-int drop(double L, double d, Random *r)
-{
-  // X coord of first needle end  
-  double x1=r->Rannyu(0,d);
-  // cos_t have a non-uniform distribution in [-1,+1]
-  double x2, y2, cos_t;
-  do{
-    x2=r->Rannyu(-L,L);
-    y2=r->Rannyu(-L,L);
-  }while(pow(x2,2)+pow(y2,2)>pow(L,2));
-  
-  cos_t = x2*1./sqrt(x2*x2+y2*y2);
+/***********************************
+*   Function implementation
+***********************************/
 
-  if(x1 + L*cos_t > d || x1 + L*cos_t < 0)
-    return 1;
-  return 0;
-}
+double error(double sum, double sum2, int n){
 
-double error(double sum, double sum2, int n)
-{
   if (n == 0)
     return 0;
   
@@ -86,8 +83,30 @@ double error(double sum, double sum2, int n)
     return sqrt((sum2-sum*sum)/n);
 }
 
-tuple<vector<double>,vector<double>> blocking_method(vector<double> v, int n_step, int n_block) 
+
+class Integral(){
+  
+
+  double evaluate(double x)
+  {
+    return M_PI_2*cos(M_PI_2*x);
+  }
+
+  private:
+
+  double max=M_PI_2;
+};
+
+double function(double x)
 {
+  return M_PI_2*cos(M_PI_2*x);
+}
+
+/**********************************************/
+/* tuple are the common way to return multiple values, of different types
+*/
+
+tuple<vector<double>,vector<double>> blocking_method(vector<double> v, int n_step, int n_blocks) {
   vector<double> av, av2, err;
   double s_block;
   double sum = 0, sum2 = 0;
@@ -111,6 +130,8 @@ tuple<vector<double>,vector<double>> blocking_method(vector<double> v, int n_ste
   }
   return make_tuple(av, err);
 }
+
+/*********************************/
 
 Random rng_load() {
 
