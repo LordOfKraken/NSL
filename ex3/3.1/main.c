@@ -145,11 +145,10 @@ tuple <double, double> black_scholes(double S0, double K, double T, double r, do
     return make_tuple(C,P);
 }
 /**********************************************/
-double error(double sum, double sum2, int n){
-
+double error(double sum, double sum2, int n)
+{
   if (n == 0)
     return 0;
-
   else
     return sqrt((sum2-sum*sum)/n);
 }
