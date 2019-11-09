@@ -10,6 +10,7 @@ _/    _/  _/_/_/  _/_/_/_/ email: Davide.Galli@unimi.it
 
 #ifndef __Random__
 #define __Random__
+#include "point.h"
 
 class Random {
 
@@ -32,6 +33,9 @@ public:
   double Exp(double mean);
   double Lorentz(double mean, double gamma);
   double Importance(void);
+  point Walk(double step);
+  point Walk(double step, point p);
+  point WalkGauss(double mean, double sigma);
 };
 
 #endif // __Random__

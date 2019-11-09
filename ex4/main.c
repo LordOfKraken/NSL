@@ -317,9 +317,8 @@ double Pbc(double r){  //Algorithm for periodic boundary conditions with side L=
 void Blocking(void){
   vector<double> m_epot, m_ekin, m_etot, m_temp, m_pres;
   vector<double> err_epot, err_ekin, err_etot, err_temp, err_pres;
-  cout<< "roba" <<endl;
+  
   m_epot=get<0>(blocking_method(v_epot,nstep*0.1,nblock));
-    cout<< "roba" <<endl;
   m_ekin=get<0>(blocking_method(v_ekin,nstep*0.1,nblock));
   m_etot=get<0>(blocking_method(v_etot,nstep*0.1,nblock));
   m_temp=get<0>(blocking_method(v_temp,nstep*0.1,nblock));

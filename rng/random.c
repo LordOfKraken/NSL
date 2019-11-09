@@ -48,8 +48,34 @@ double Random :: Lorentz(double mean, double gamma) {
 }
 
 double Random :: Importance()
-{ 
+{
   return 2.*(1. - Rannyu());
+}
+
+point Random :: Walk(double step)
+{
+  double theta, phi;
+  theta =2*M_PI*Rannyu();
+  phi = acos( 1. - 2. * Rannyu());
+  point p(step * sin(theta) * cos(phi), step * sin(theta) * sin(phi), step * cos(phi));
+  return p;
+}
+
+point Random :: Walk(double step, point p)
+{
+  double theta, phi;
+  theta =2*M_PI*Rannyu();
+  phi = acos( 1. - 2. * Rannyu());
+  point a(step * sin(theta) * cos(phi), step * sin(theta) * sin(phi), step * cos(phi));
+  return p+a;
+}
+
+point Random :: WalkGauss(double mean, double sigma) {
+   double x=sqrt(-2.*log(1.-Rannyu()))*cos(2.*M_PI*Rannyu());
+   double y=sqrt(-2.*log(1.-Rannyu()))*cos(2.*M_PI*Rannyu());
+   double z=sqrt(-2.*log(1.-Rannyu()))*cos(2.*M_PI*Rannyu());
+   point p(x,y,z);
+   return p;
 }
 
 double Random :: Rannyu(double min, double max){
