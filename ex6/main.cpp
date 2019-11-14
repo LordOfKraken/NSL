@@ -20,12 +20,13 @@ using namespace std;
 int main()
 {
   Input(); //Inizialization
-  do
+  while(t <= tstep)
   {
-    cout << "Temperature = " << t <<endl;
-    cout << "----------------------------" << endl << endl;
+    //fix temperature with 2 decimal digits to solve approximation problem
+    temp = round(100*(tmin + t*(tmax-tmin)/tstep))*0.01;
+    cout << "Temperature = " << temp <<endl;
 
-    beta=1/t;
+    beta=1/temp;
 
     for(int term=1; term <= nstep; ++term) // Thermalization
           Move(metro);
@@ -39,10 +40,12 @@ int main()
         Measure();
         Accumulate(); //Update block averages
       }
-      Averages(iblk);   //Print results for current block
+      Averages(iblk);   //Calculate results for current block
     }
-    t += tstep;
-  } while(t<=t_max);
+    t++;
+    cout << "Acceptance rate " << accepted/attempted << endl << endl;
+    cout << "----------------------------" << endl << endl;
+  }
 
   ConfFinal(); //Write final configuration
   return 0;
@@ -254,26 +257,27 @@ void Averages(int iblk) //Print results for current block
   err_x=Error(glob_av[ix],glob_av2[ix],iblk);
 
   string rtype="gibbs";
-  if(metro==1) rtype="metropolis";
+  if(metro==1)
+    rtype="metropolis";
 
-  if(iblk==nblk)
+  if(iblk == nblk)
   {
     Ene.open("energy_" + rtype + ".out",ios::app);
-    Ene << setw(wd) << t <<  setw(wd) << iblk << setw(wd) << glob_av[iu]/(double)iblk << setw(wd) << err_u << endl;
+    Ene << setw(wd) << t <<   setw(wd) << glob_av[iu]/(double)iblk << setw(wd) << err_u << endl;
     Ene.close();
 
-    Heat.open("heat_capacity.out",ios::app);
-    Heat << setw(wd) << t <<  setw(wd) << stima_c << setw(wd) << glob_av[ic]/(double)iblk << setw(wd) << err_c << endl;
+    Heat.open("heat_capacity_" + rtype + ".out",ios::app);
+    Heat << setw(wd) << t << setw(wd) << glob_av[ic]/(double)iblk << setw(wd) << err_c << endl;
     Heat.close();
 
-    Mag.open("magnetization.out",ios::app);
-    Mag << setw(wd) << t <<  setw(wd) << stima_m << setw(wd) << glob_av[im]/(double)iblk << setw(wd) << err_m << endl;
+    Mag.open("magnetization_" + rtype + ".out",ios::app);
+    Mag << setw(wd) << t <<  setw(wd) << glob_av[im]/(double)iblk << setw(wd) << err_m << endl;
     Mag.close();
 
     if(h!=0)
     {
-      Chi.open("susceptibility.out",ios::app);
-      Chi << setw(wd) << t <<  setw(wd) << stima_x << setw(wd) << glob_av[ix]/(double)iblk << setw(wd) << err_x << endl;
+      Chi.open("susceptibility_" + rtype + ".out",ios::app);
+      Chi << setw(wd) << t << setw(wd) << glob_av[ix]/(double)iblk << setw(wd) << err_x << endl;
       Chi.close();
     }
   }

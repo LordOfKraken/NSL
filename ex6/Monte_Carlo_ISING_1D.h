@@ -37,9 +37,8 @@ double s[m_spin];
 // thermodynamical state
 int nspin;
 double beta,temp,J,h;
-double t_min = 0.5, t_max=2.0, tstep=(t_max - t_min)/50;
-double t=t_min;
-
+double tmin = 0.5, tmax=2.0;
+int tstep=51, t=0;
 
 // simulation
 int nstep, nblk, metro, old;
