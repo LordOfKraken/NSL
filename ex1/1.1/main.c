@@ -38,7 +38,7 @@ int main (int argc, char *argv[])
       r.push_back(rnd.Rannyu());
       s.push_back(pow(r[i]-0.5,2));
   }
-  
+
   // use blocking method to evaluate average and error
   m_r = get<0>(blocking_method(r, n_throw, n_block));
   err_r = get<1>(blocking_method(r, n_throw, n_block));
@@ -53,12 +53,13 @@ int main (int argc, char *argv[])
   int n_interval=100;
   int n_rep=100;
   vector <int> count;
-  vector <double> chi;
+  vector <double> chi, chi_sum;
   count.resize(n_interval);
   chi.resize(n_rep);
+  chi_sum.resize(n_rep);
   double chi_avg=0;
 
-// enlarge r<> to 1E6  
+// enlarge r<> to 1E6
   n_throw=1E6;
   r.resize(0);
 
@@ -80,7 +81,7 @@ int main (int argc, char *argv[])
       count[k]=0;
     }
     chi_avg+=chi[i];
-    //cout<< i << " " << chi[i] << endl;
+    chi_sum[i]=chi_avg/i;
   }
   cout<< "Chi squared average = " << chi_avg/n_rep << endl;
 
@@ -89,34 +90,44 @@ int main (int argc, char *argv[])
 ********************************/
 
   ofstream r_out("r.dat");
-  if (r_out.is_open()) 
+  if (r_out.is_open())
   {
     for (int i = 0; i < n_block; i++)
       r_out << i * l_block << " " << m_r[i] - 0.5 << " " << err_r[i] << endl;
-  } 
+  }
   else
     cerr <<"Unable to open r output file: data saving failed" <<endl;
   r_out.close();
 
   ofstream s_out("s.dat");
-  if (s_out.is_open()) 
+  if (s_out.is_open())
   {
     for (int i = 0; i < n_block; i++)
       s_out << i * l_block << " " << m_s[i] - 1./12 << " " << err_s[i] << endl;
-  } 
+  }
   else
     cerr <<"Unable to open sigma output file: data saving failed" <<endl;
   s_out.close();
-  
+
   ofstream chi_out("chi.dat");
-  if (chi_out.is_open()) 
+  if (chi_out.is_open())
   {
     for (int i = 0; i < n_interval; i++)
       chi_out << i  << " " << chi[i] << endl;
-  } 
+  }
   else
     cerr <<"Unable to open chi output file: data saving failed" <<endl;
-  s_out.close();
+  chi_out.close();
+
+  ofstream chis_out("chi_avg.dat");
+  if (chis_out.is_open())
+  {
+    for (int i = 0; i < n_interval; i++)
+      chis_out << i  << " " << chi_sum[i] << endl;
+  }
+  else
+    cerr <<"Unable to open chi average output file: data saving failed" <<endl;
+  chis_out.close();
   return 0;
 }
 
@@ -128,7 +139,7 @@ double error(double sum, double sum2, int n){
 
   if (n == 0)
     return 0;
-  
+
   else
     return sqrt((sum2-sum*sum)/n);
 }
@@ -142,18 +153,18 @@ tuple<vector<double>,vector<double>> blocking_method(vector<double> v, int n_ste
   double s_block;
   double sum = 0, sum2 = 0;
   int l_block = n_step / n_block;
-  
+
   // loop over blocks
   for (int i = 0; i < n_block; i++) {
     s_block = 0;
     // sum elements in one block
     for (int j = 0; j < l_block; ++j)
       s_block += v[i*l_block + j];
-    
+
     // compute progressive sum
     sum += s_block/l_block;
     sum2 += pow(s_block/l_block, 2);
-    
+
     // average over throws and evaluate error
     av.push_back(sum /(i + 1));
     av2.push_back(sum2 /(i + 1));
@@ -187,7 +198,7 @@ Random rng_load() {
       }
       input.close();
    } else cerr << "PROBLEM: Unable to open seed.in" << endl;
-   
+
    rnd.SaveSeed();
    return rnd;
 }

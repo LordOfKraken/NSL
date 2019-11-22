@@ -11,106 +11,127 @@ _/    _/  _/_/_/  _/_/_/_/ email: Davide.Galli@unimi.it
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <vector>
-#include <tuple>
 #include <cmath>
 #include "rng/random.h"
 
 using namespace std;
 
 int drop(double L, double d, Random *r);
-double error(double sum, double sum2, int n);
-tuple<vector<double>,vector<double>> blocking_method(vector<double> v, int n_step, int n_block);
 Random rng_load();
 
-int main(int argc, char *argv[]) 
-{ 
-  Random rnd=rng_load();
-  double L=0.7;
-  double d=1;
-  int n_hit=0;
-  int n_throw = 10000;
-  int n_block = 100;
-  int n_rep = 1000;
-  double l_block = n_throw*1./n_block;
-  vector <double> pi, ave, err;
-  
-  for( int j=0; j< n_rep; j++)
-  {
-    n_hit=0;
-    for( int i=0; i< n_throw; i++)
-    {
-      n_hit+=drop(L,d,&rnd);
-    }
-    pi.push_back(2*L*n_throw/(d*n_hit));
-  }
-  
-  ave=get<0>(blocking_method(pi,n_rep,n_block));
-  err=get<1>(blocking_method(pi,n_rep,n_block));
+// Blocking method
+void Measure(int);
+void Reset(int);
+void Accumulate(void);
+void Averages(int);
+double Error(double, double, int);
 
-  ofstream out("pi.dat");
-  if (out.is_open())
-    for (int i = 0; i < n_block; ++i)
-      out << i*l_block << " " << pi[i] << " " << err[i] << endl;
-  else
-    cerr << "PROBLEM: Unable to open output file" << endl;
-  
-  out.close();
+Random rnd=rng_load();
+
+double L=0.7;
+double d=1;
+int n_block = 100;
+int n_step = 1;
+
+double walker;
+double glob_av,glob_av2;
+double blk_norm, blk_av;
+
+int main()
+{
+  double n_throw=10000;
+
+  for( int iblk = 1; iblk <= n_block; iblk++ )
+  {
+    Reset(iblk);      // Reset block averages
+    for( int istep = 1; istep <= n_step; ++istep )
+    {
+      Measure(n_throw); //Pi measurement -> save in walker
+      Accumulate();     //Sum walker for each block
+    }
+    Averages(iblk); // Evaluate block averages and print to file
+  }
   return 0;
 }
 
-int drop(double L, double d, Random *r)
+int drop(double L, double d)
 {
-  // X coord of first needle end  
-  double x1=r->Rannyu(0,d);
+  // X coord of first needle end
+  double x1=rnd.Rannyu(0,d);
   // cos_t have a non-uniform distribution in [-1,+1]
   double x2, y2, cos_t;
   do{
-    x2=r->Rannyu(-L,L);
-    y2=r->Rannyu(-L,L);
-  }while(pow(x2,2)+pow(y2,2)>pow(L,2));
-  
-  cos_t = x2*1./sqrt(x2*x2+y2*y2);
+    x2=rnd.Rannyu(-1,1);
+    y2=rnd.Rannyu(-1,1);
+  }while(pow(x2,2) + pow(y2,2) > 1);
 
-  if(x1 + L*cos_t > d || x1 + L*cos_t < 0)
+  cos_t = x2 * pow(x2*x2 + y2*y2, -0.5);
+
+  if(x1 + L*cos_t >= d || x1 + L*cos_t <= 0)
     return 1;
-  return 0;
-}
-
-double error(double sum, double sum2, int n)
-{
-  if (n == 0)
-    return 0;
-  
   else
-    return sqrt((sum2-sum*sum)/n);
+    return 0;
 }
 
-tuple<vector<double>,vector<double>> blocking_method(vector<double> v, int n_step, int n_block) 
-{
-  vector<double> av, av2, err;
-  double s_block;
-  double sum = 0, sum2 = 0;
-  int l_block = n_step / n_block;
-  
-  // loop over blocks
-  for (int i = 0; i < n_block; i++) {
-    s_block = 0;
-    // sum elements in one block
-    for (int j = 0; j < l_block; ++j)
-      s_block += v[i*l_block + j];
-    
-    // compute progressive sum
-    sum += s_block/l_block;
-    sum2 += pow(s_block/l_block, 2);
-    
-    // average over throws and evaluate error
-    av.push_back(sum /(i + 1));
-    av2.push_back(sum2 /(i + 1));
-    err.push_back(error(av[i], av2[i], i));
+
+void Measure(int n_throw){ //Properties measurement
+  double n_hit;
+
+  n_hit=0;
+  for( int i=0; i< n_throw; i++)
+  {
+    n_hit+=drop(L,d);
   }
-  return make_tuple(av, err);
+  walker = L*n_throw*2./(d*n_hit);
+  return;
 }
+
+void Accumulate(void) //Update block averages
+{
+  blk_av += walker;
+  blk_norm += 1;
+}
+
+void Averages(int iblk) //Print results for current block
+{
+  ofstream Pi;
+  double stima_pi, err_pi;
+  Pi.open("output/pi.out",ios::app);
+
+  cout << "Block number " << iblk << endl;
+
+  stima_pi = blk_av/blk_norm;
+  glob_av += stima_pi;
+  glob_av2 += stima_pi*stima_pi;
+  err_pi = Error(glob_av,glob_av2,iblk);
+
+  //Potential energy per particle
+  Pi << iblk << " " << glob_av/(double)iblk << " " << err_pi << endl;
+
+  cout << " Pi = " << glob_av/(double)iblk << " +- " << err_pi << endl;
+  cout << "----------------------------" << endl << endl;
+
+  Pi.close();
+}
+
+void Reset(int iblk) //Reset block averages
+{
+  if(iblk == 1)
+  {
+    glob_av = 0;
+    glob_av2 = 0;
+  }
+
+  blk_av = 0;
+  blk_norm = 0;
+  walker = 0;
+}
+
+double Error(double sum, double sum2, int iblk)
+{
+  return sqrt((sum2/(double)iblk - pow(sum/(double)iblk,2))/(double)iblk);
+}
+
 
 Random rng_load() {
 
@@ -135,7 +156,7 @@ Random rng_load() {
       }
       input.close();
    } else cerr << "PROBLEM: Unable to open seed.in" << endl;
-   
+
    rnd.SaveSeed();
    return rnd;
 }

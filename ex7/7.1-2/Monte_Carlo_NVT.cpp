@@ -24,8 +24,6 @@ int main()
   // Thermalization
   for(int istep=1; istep <= thstep; ++istep)
   {
-    cout<<"ciao"<<endl;
-
     Move();
 
     Measure();
@@ -175,7 +173,6 @@ void Move(void)
     xold = x[o];
     yold = y[o];
     zold = z[o];
-    cout<<"old"<<endl;
 
     energy_old = Boltzmann(xold,yold,zold,o);
 
@@ -185,8 +182,6 @@ void Move(void)
     znew = Pbc( z[o] + delta*(rnd.Rannyu() - 0.5) );
 
     energy_new = Boltzmann(xnew,ynew,znew,o);
-
-    cout<<"new"<<endl;
 
   //Metropolis test
     p = exp(beta*(energy_old-energy_new));
@@ -300,10 +295,8 @@ void Evaluate(int step)
   Pres.close();
 }
 
-
 void Reset(int iblk) //Reset block averages
 {
-
    if(iblk == 1)
    {
        for(int i=0; i<n_props; ++i)
@@ -373,10 +366,10 @@ void Averages(int iblk) //Print results for current block
     glob_av[i] += stima_g;
     glob_av2[i] += pow(stima_g,2);
     err_gdir = Error(glob_av[i], glob_av2[i], iblk);
-    Gofr << setw(wd) << iblk << setw(wd) << i << setw(wd) << stima_g << endl;
+    Gofr << setw(wd) << iblk << setw(wd) << i - igofr << setw(wd) << stima_g << endl;
     if( iblk == nblk)
     {
-      Gave << setw(wd) << i << setw(wd) << stima_g << setw(wd)
+      Gave << setw(wd) << i - igofr << setw(wd) << stima_g << setw(wd)
         << glob_av[i] * 1./iblk << setw(wd) << err_gdir << endl;
     }
   }

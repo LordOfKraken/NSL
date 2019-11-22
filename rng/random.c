@@ -49,7 +49,7 @@ double Random :: Lorentz(double mean, double gamma) {
 
 double Random :: Importance()
 {
-  return 2.*(1. - Rannyu());
+  return 1 + sqrt(1-Rannyu());
 }
 
 point Random :: Walk(double step)
